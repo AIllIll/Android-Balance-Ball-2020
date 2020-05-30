@@ -11,6 +11,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.Display;
 import android.view.SurfaceHolder;
@@ -25,6 +26,9 @@ public class BouncingBallActivity extends Activity implements SensorEventListene
 
 	// animated view
 	private ShapeView mShapeView;
+
+	// 震动
+	private Vibrator vib;
 
 	// screen size
 	private int mWidthScreen;
@@ -60,6 +64,11 @@ public class BouncingBallActivity extends Activity implements SensorEventListene
 			0xFFCDA66C
 	};
 
+	// 封装一个震动函数
+	private void vibrate() {
+		vib.vibrate(500); // 震动500毫秒
+	}
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -76,7 +85,8 @@ public class BouncingBallActivity extends Activity implements SensorEventListene
 		mWidthScreen = display.getWidth();
 		mHeightScreen = display.getHeight() + 80;
 
-
+		// 初始化震动
+		vib = (Vibrator) getSystemService(VIBRATOR_SERVICE);
 	}
 
 	@Override
@@ -178,17 +188,21 @@ public class BouncingBallActivity extends Activity implements SensorEventListene
 				mXCenter = RADIUS;
 				mVx = -mVx * FACTOR_BOUNCEBACK;
 				updateBallColor();
+				vibrate();
 			}
 			// 触碰上方
 			if(mYCenter < RADIUS)
 			{  mYCenter = RADIUS;  mVy = -mVy * FACTOR_BOUNCEBACK;
-				updateBallColor(); }
+				updateBallColor();
+				vibrate();
+			}
 			// 触碰右侧
 			if(mXCenter > mWidthScreen - RADIUS)
 			{
 				mXCenter = mWidthScreen - RADIUS;
 				mVx = -mVx * FACTOR_BOUNCEBACK;
 				updateBallColor();
+				vibrate();
 			}
 			// 触碰下方
 			if(mYCenter > mHeightScreen - 2 * RADIUS)
@@ -196,6 +210,7 @@ public class BouncingBallActivity extends Activity implements SensorEventListene
 				mYCenter = mHeightScreen - 2 * RADIUS;
 				mVy = -mVy * FACTOR_BOUNCEBACK;
 				updateBallColor();
+				vibrate();
 			}
 
 			return true;
