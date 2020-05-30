@@ -18,11 +18,28 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.WindowManager;
 
-public class BouncingBallActivity extends Activity implements SensorEventListener{
+// 为了使用三个监听器，不能直接使用SensorEventListener接口
+public class BouncingBallActivity extends Activity {
+
+	// 传感器数据数组
+	private float magneticFieldSensorDataX; // 磁场X轴
+	private float magneticFieldSensorDataY; // 磁场Y轴
+	private float magneticFieldSensorDataZ; // 磁场Z轴
+	private float lightSensorData; // 光照数据
+
+	// 三种传感器都各自使用一个监听器
 
 	// sensor-related
 	private SensorManager mSensorManager;
 	private Sensor mAccelerometer;
+	private MySensorEventListener accelerometerListener; // 监听
+
+	// 磁场
+	private Sensor mMagneticField;
+	private MySensorEventListener magneticFieldListener; // 监听
+	// 光照
+	private Sensor mLight;
+	private MySensorEventListener lightListener; // 监听
 
 	// animated view
 	private ShapeView mShapeView;
@@ -79,6 +96,8 @@ public class BouncingBallActivity extends Activity implements SensorEventListene
 		// initializing sensors
 		mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
 		mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+		mMagneticField = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);// 获取磁场传感器
+		mLight = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);// 获取光照传感器
 
 		// obtain screen width and height
 		Display display = ((WindowManager)this.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
@@ -87,24 +106,11 @@ public class BouncingBallActivity extends Activity implements SensorEventListene
 
 		// 初始化震动
 		vib = (Vibrator) getSystemService(VIBRATOR_SERVICE);
-	}
 
-	@Override
-	public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-	}
-
-	@Override
-	public void onSensorChanged(SensorEvent event) {
-		// obtain the three accelerations from sensors
-		mAx = event.values[0];
-		mAy = event.values[1];
-
-		float mAz = event.values[2];
-
-		// taking into account the frictions
-		mAx = Math.signum(mAx) * Math.abs(mAx) * (1 - FACTOR_FRICTION * Math.abs(mAz) / GRAVITY);
-		mAy = Math.signum(mAy) * Math.abs(mAy) * (1 - FACTOR_FRICTION * Math.abs(mAz) / GRAVITY);
+		// 创建传感器监听器对象
+		accelerometerListener = new MySensorEventListener();
+		magneticFieldListener = new MySensorEventListener();
+		lightListener = new MySensorEventListener();
 	}
 
 	@Override
@@ -116,7 +122,10 @@ public class BouncingBallActivity extends Activity implements SensorEventListene
 
 		setContentView(mShapeView);
 		// start sensor sensing
-		mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+		// 由于不再继承接口，注册context改为各传感器的监听器
+		mSensorManager.registerListener(accelerometerListener, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+		mSensorManager.registerListener(magneticFieldListener, mMagneticField, SensorManager.SENSOR_DELAY_NORMAL);
+		mSensorManager.registerListener(lightListener, mLight, SensorManager.SENSOR_DELAY_NORMAL);
 	}
 
 	@Override
@@ -128,7 +137,10 @@ public class BouncingBallActivity extends Activity implements SensorEventListene
 
 	protected void onDestory() {
 		super.onDestroy();
-		mSensorManager.unregisterListener(this);
+		// 同理，注销的也是各监听器
+		mSensorManager.unregisterListener(accelerometerListener);
+		mSensorManager.unregisterListener(magneticFieldListener);
+		mSensorManager.unregisterListener(lightListener);
 	}
 
 	// the view that renders the ball
@@ -230,6 +242,14 @@ public class BouncingBallActivity extends Activity implements SensorEventListene
 				canvas.drawColor(0xFF000000); // 屏幕底色
 				mPaint.setColor(mBallColor); // 设置小球颜色
 				canvas.drawOval(mRectF, mPaint);
+				mPaint.setColor(0xFFFFFFFF); // 设置字体颜色
+				mPaint.setTextSize(30); // 字体大小
+				canvas.drawText("磁场数据", (float)(mWidthScreen * 0.8),30, mPaint);
+				canvas.drawText(String.valueOf(magneticFieldSensorDataX), (float)(mWidthScreen * 0.8),60, mPaint);
+				canvas.drawText(String.valueOf(magneticFieldSensorDataY), (float)(mWidthScreen * 0.8),90,  mPaint);
+				canvas.drawText(String.valueOf(magneticFieldSensorDataZ), (float)(mWidthScreen * 0.8), 120, mPaint);
+				canvas.drawText("光照数据", (float)(mWidthScreen * 0.8),150, mPaint);
+				canvas.drawText(String.valueOf(lightSensorData), (float)(mWidthScreen * 0.8),180, mPaint);
 			}
 		}
 
@@ -293,6 +313,37 @@ public class BouncingBallActivity extends Activity implements SensorEventListene
 						mSurfaceHolder.unlockCanvasAndPost(c);
 					}
 				}
+			}
+		}
+	}
+
+	// 自行实现私有的传感器监听类
+	private class MySensorEventListener implements SensorEventListener{
+		@Override
+		public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+		}
+
+		@Override
+		public void onSensorChanged(SensorEvent event) {
+//			Log.d("sensor", event.sensor.getType()+"");
+			// 按照不同的传感器类型进行判断，传感器数据改变时进行对应的操作
+			if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+				// obtain the three accelerations from sensors
+				mAx = event.values[0];
+				mAy = event.values[1];
+
+				float mAz = event.values[2];
+
+				// taking into account the frictions
+				mAx = Math.signum(mAx) * Math.abs(mAx) * (1 - FACTOR_FRICTION * Math.abs(mAz) / GRAVITY);
+				mAy = Math.signum(mAy) * Math.abs(mAy) * (1 - FACTOR_FRICTION * Math.abs(mAz) / GRAVITY);
+			} else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+				magneticFieldSensorDataX = event.values[0];
+				magneticFieldSensorDataY = event.values[1];
+				magneticFieldSensorDataZ = event.values[2];
+			} else if (event.sensor.getType() == Sensor.TYPE_LIGHT) {
+				lightSensorData = event.values[0];
 			}
 		}
 	}
