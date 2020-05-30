@@ -51,7 +51,7 @@ public class BouncingBallActivity extends Activity implements SensorEventListene
 		 // obtain screen width and height
 		 Display display = ((WindowManager)this.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
 		 mWidthScreen = display.getWidth();
-		 mHeightScreen = display.getHeight()-95;
+		 mHeightScreen = display.getHeight() + 80;
 		 
 
 	 }
