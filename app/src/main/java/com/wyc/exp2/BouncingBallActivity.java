@@ -146,6 +146,12 @@ public class BouncingBallActivity extends Activity {
 	// the view that renders the ball
 	private class ShapeView extends SurfaceView implements SurfaceHolder.Callback{
 
+		// 圆环
+		private final int RADIUS_OUTER = 500;
+		private final int RADIUS_INNER = 100;
+		// 是否在圆环上
+		private boolean isOnRing=false;
+
 		private final int RADIUS = 50;
 		private final float FACTOR_BOUNCEBACK = 0.75f;
 
@@ -225,6 +231,15 @@ public class BouncingBallActivity extends Activity {
 				vibrate();
 			}
 
+			// 到圆心的距离的平方大于半径则说明在圆外，否则在圆内
+			isOnRing =
+					(mYCenter-mHeightScreen*0.5) * (mYCenter-mHeightScreen*0.5)
+					+ (mXCenter-mWidthScreen*0.5) * (mXCenter-mWidthScreen*0.5) <
+					(RADIUS_OUTER-RADIUS) * (RADIUS_OUTER-RADIUS) &&
+					(mYCenter-mHeightScreen*0.5) * (mYCenter-mHeightScreen*0.5)
+					+ (mXCenter-mWidthScreen*0.5) * (mXCenter-mWidthScreen*0.5) >
+					(RADIUS_INNER+RADIUS) * (RADIUS_INNER+RADIUS);
+
 			return true;
 		}
 
@@ -238,18 +253,35 @@ public class BouncingBallActivity extends Activity {
 		{
 			if(mRectF != null && destroyed == false )
 			{
-				mRectF.set(mXCenter - RADIUS, mYCenter - RADIUS, mXCenter + RADIUS, mYCenter + RADIUS);
 				canvas.drawColor(0xFF000000); // 屏幕底色
+
+				// 画个圆环
+				mPaint.setColor(0xFFFFFFFF); // 设置圆环颜色
+				mRectF.set(Math.round(mWidthScreen*0.5) - RADIUS_OUTER, Math.round(mHeightScreen*0.5) - RADIUS_OUTER, Math.round(mWidthScreen*0.5) + RADIUS_OUTER, Math.round(mHeightScreen*0.5) + RADIUS_OUTER);
+				canvas.drawArc(mRectF, 0, 360, false, mPaint);
+				mPaint.setColor(0xFF000000); // 设置圆环颜色
+				mRectF.set(Math.round(mWidthScreen*0.5) - RADIUS_INNER, Math.round(mHeightScreen*0.5) - RADIUS_INNER, Math.round(mWidthScreen*0.5) + RADIUS_INNER, Math.round(mHeightScreen*0.5) + RADIUS_INNER);
+				canvas.drawArc(mRectF, 0, 360, false, mPaint);
+
+				// 画小球
+				mRectF.set(mXCenter - RADIUS, mYCenter - RADIUS, mXCenter + RADIUS, mYCenter + RADIUS);
 				mPaint.setColor(mBallColor); // 设置小球颜色
 				canvas.drawOval(mRectF, mPaint);
 				mPaint.setColor(0xFFFFFFFF); // 设置字体颜色
 				mPaint.setTextSize(30); // 字体大小
+				mPaint.setTextAlign(Paint.Align.LEFT); // 字体左对齐
 				canvas.drawText("磁场数据", (float)(mWidthScreen * 0.8),30, mPaint);
 				canvas.drawText(String.valueOf(magneticFieldSensorDataX), (float)(mWidthScreen * 0.8),60, mPaint);
 				canvas.drawText(String.valueOf(magneticFieldSensorDataY), (float)(mWidthScreen * 0.8),90,  mPaint);
 				canvas.drawText(String.valueOf(magneticFieldSensorDataZ), (float)(mWidthScreen * 0.8), 120, mPaint);
 				canvas.drawText("光照数据", (float)(mWidthScreen * 0.8),150, mPaint);
 				canvas.drawText(String.valueOf(lightSensorData), (float)(mWidthScreen * 0.8),180, mPaint);
+				// 是否在圆环上，不在则提示
+				mPaint.setTextSize(50); // 字体大小
+				mPaint.setTextAlign(Paint.Align.CENTER); // 字体居中对齐
+				if (!isOnRing) {
+					canvas.drawText("掉出环外了！", (float)(mWidthScreen * 0.5),(float)(0.9*mHeightScreen), mPaint);
+				}
 			}
 		}
 
